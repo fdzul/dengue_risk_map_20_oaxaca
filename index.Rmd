@@ -1,0 +1,443 @@
+---
+title: "Programa de Prevención y Control del Dengue de Oaxaca"
+output: 
+  flexdashboard::flex_dashboard:
+      theme: united
+      social: ["twitter", "facebook", "menu", "github"]
+output_dir: libs      
+---
+
+```{r setup}
+
+# Step 1. load the librarys ####
+options(shiny.maxRequestSize=30*1024^2)
+library(formattable)
+library(tmap)
+library(rmarkdown)
+library(knitr)
+library(shiny)
+library(flexdashboard)
+library(plotly)
+library(boldenr)
+library(magrittr)
+library(leaflet)
+library(ggplot2)
+library(dplyr)
+library(stringr)
+library(dash)
+library(ECharts2Shiny)
+library(sf)
+
+# Step 2. define the path ####
+
+if(as.vector(Sys.info()["sysname"]) == "Darwin"){
+    
+    # 2.1 dengue dataset
+    path_arbo <- "/Users/fdzul/Library/CloudStorage/OneDrive-Personal/datasets/DGE/arbo/"
+    
+    # 2.2 vector control dataset 
+    path_vect <-  "/Users/fdzul/Library/CloudStorage/OneDrive-Personal/datasets/CENAPRECE/2022/20_oaxaca"
+    path_coord <- paste(path_vect, "DescargaOvitrampasMesFco.txt", sep = "/")
+    
+} else if(as.vector(Sys.info()["sysname"]) == "Windows"){
+    # 2.1. dengue dataset
+    path_arbo <- "D:/Users/HOME/OneDrive/datasets/DGE/arbo/"
+    
+    # 2.2 vector control dataset 
+    path_vect <- "D:/Users/HOME/OneDrive/datasets/CENAPRECE/2022/20_oaxaca"
+    path_coord <- paste(path_vect, "DescargaOvitrampasMesFco.txt", sep = "/")
+    
+} else if(as.vector(Sys.info()["sysname"]) == "Linux"){
+    
+}
+
+
+
+# Step 3. load the functions ####
+if(as.vector(Sys.info()["sysname"]) == "Darwin"){
+    # .1 dengue dataset
+    source("~/Dropbox/r_developments/r_new_functions/3.Functions/heatmap_confirmados.R")
+    source("~/Dropbox/r_developments/r_new_functions/3.Functions/heatmap_hospitalizados.R")
+    source("~/Dropbox/r_developments/r_new_functions/3.Functions/static_bump_map.R")
+    
+    
+    # 1.3 ovitraps dataset 
+    source("~/Dropbox/r_developments/r_new_functions/3.Functions/ovitraps_occupancy_abundancy.R")
+
+    # 1.4 larvae control dataset
+    source("~/Dropbox/r_developments/r_new_functions/3.Functions/cl_interactive_map.R")
+    source("~/Dropbox/r_developments/r_new_functions/3.Functions/joint_cl_blocks.R")
+    
+    # 1.5 ulv dataset
+    
+    # 1.6 hotspots cases
+    source("~/Dropbox/r_developments/r_new_functions/3.Functions/risk_agebs.R")
+    
+    source("~/Dropbox/r_developments/r_new_functions/3.Functions/risk_map.R")
+    
+    source("~/Dropbox/r_developments/r_new_functions/3.Functions/hotspots_map.R")
+    
+    # 1. 7 eggs hotspots ####
+    
+source("~/Dropbox/r_developments/r_dashboards/github_pages/test_denv_dash_oax/3.Functions/eggs_hotspots_intensity_map_year.R")
+
+    
+} else if(as.vector(Sys.info()["sysname"]) == "Windows"){
+    # 1.1. dengue dataset
+    
+    # 1.5 ulv dataset
+    
+    # 1.6 hotspots
+
+
+    #Step  load the risk_ageb function ###
+    source('C:/Users/HOME/Dropbox/r_developments/r_dashboards/github_pages/test_dashboard/3.Functions/risk_agebs.R')
+
+    # Step  load the risk_map function ####
+    source("D:/OneDrive/proyects/hotspots/3.Functions/risk_map.R")
+
+    # Step  load the hotspots map ####
+    source("C:/Users/HOME/Dropbox/r_developments/r_dashboards/github_pages/test_dashboard/3.Functions/hotspots_map.R")
+    
+    # 1. 7 eggs hotspots ####
+    source("C:/Users/HOME/Dropbox/r_developments/r_dashboards/github_pages/test_denv_dash_oax/3.Functions/eggs_hotspots_intensity_map_year.R")
+    
+} else if(as.vector(Sys.info()["sysname"]) == "Linux"){
+    
+}
+
+
+
+# Step 5. Load the RData files ####
+if(as.vector(Sys.info()["sysname"]) == "Darwin"){
+    # load the blocks
+    load("~/OneDrive/automatic_read_ine_2010/8.RData/block_ine10_mx.RData")
+    
+    # load the dengue cases hotspots
+    load("~/Dropbox/hotspots_2021/8.RData/cases_hotspots_agebs19.RData")
+    hotspots <- cases_hotspots_agebs19 |>
+    sf::st_make_valid()
+    
+    # load the vector hotspots
+    load("~/OneDrive/proyects/hotspots_eggs/8.RData/20_oaxaca/betas/20_oaxaca_zinb1_betas.RData")
+    
+    
+} else if(as.vector(Sys.info()["sysname"]) == "Windows"){
+    
+    # load the blocks #####
+    load("D:/OneDrive/automatic_read_ine_2010/8.RData/block_ine10_mx.RData") 
+    
+    # Step 1. load the hotspots dengue cases ####
+   load("E:/backup/Dropbox_respaldo_2023_01_03/hotspots_2022/8.RData/cases_hotspots_agebs19.RData")
+    
+    cases_hotspots_agebs19 <- cases_hotspots_agebs19 |>
+    sf::st_make_valid()
+    
+    # data for epichannel data
+    load("D:/OneDrive/automatic_read_sinave/8.RData/epid_channel_data_js.RData")
+    
+    # dengue dataaset geocoded
+    load("D:/OneDrive/proyects/geocoding_mex/2022/9.RData_geocoded/den2022_positivos.RData")
+    
+    
+    # load the vector hotspots
+    load("D:/OneDrive/proyects/hotspots_eggs/8.RData/20_oaxaca/betas/20_oaxaca_zinb1_betas.RData")
+    
+} else if(as.vector(Sys.info()["sysname"]) == "Linux"){
+    
+}
+
+
+```
+
+
+
+**Hotspots de la Transmisión de Dengue**
+===================================== 
+
+Column {.tabset}
+------------------------------------
+
+
+### **<span style="color:#990000">Oaxaca</span>**
+
+```{r hotspots_dengue_oaxaca}
+hotspots_map(cve_ent = "20",
+             locality = "Oaxaca de Juárez",
+             hotspots = cases_hotspots_agebs19,
+             static_map = FALSE)
+
+```
+
+### **<span style="color:#990000">Santiago Pinotepa Nacional</span>**
+
+```{r hotspots_dengue_pinotepa}
+hotspots_map(cve_ent = "20",
+             locality = "Santiago Pinotepa Nacional",
+             hotspots = cases_hotspots_agebs19,
+             static_map = FALSE)
+
+```
+
+### **<span style="color:#990000">Heroica Ciudad de Juchitán de Zaragoza</span>**
+```{r hotspots_dengue_juchitan}
+hotspots_map(cve_ent = "20",
+             locality = "Heroica Ciudad de Juchitán de Zaragoza",
+             hotspots = cases_hotspots_agebs19,
+             static_map = FALSE)
+
+```
+
+### **<span style="color:#990000">Salina Cruz</span>**
+```{r hotspots_dengue_salina_cruz}
+hotspots_map(cve_ent = "20",
+             locality = "Salina Cruz",
+             hotspots = cases_hotspots_agebs19,
+             static_map = FALSE)
+
+```
+
+### **<span style="color:#990000">Santo Domingo Tehuantepec</span>**
+```{r hotspots_dengue_santo_domingo}
+hotspots_map(cve_ent = "20",
+             locality = "Santo Domingo Tehuantepec",
+             hotspots = cases_hotspots_agebs19,
+             static_map = FALSE)
+
+```
+
+### **<span style="color:#990000">San Juan Bautista Tuxtepec</span>**
+```{r hotspots_dengue_tuxtepec}
+hotspots_map(cve_ent = "20",
+             locality = "San Juan Bautista Tuxtepec",
+             hotspots = cases_hotspots_agebs19,
+             static_map = FALSE)
+
+```
+
+### **<span style="color:#990000">Puerto Escondido</span>**
+```{r hotspots_dengue_puerto_escondido}
+hotspots_map(cve_ent = "20",
+             locality = "Puerto Escondido",
+             hotspots = cases_hotspots_agebs19,
+             static_map = FALSE)
+
+```
+
+
+**Hotspots del Vector del Dengue**
+===================================== 
+Column {.tabset}
+------------------------------------
+
+
+### **<span style="color:#990000">Oaxaca</span>**
+```{r vector_hotspots_oaxaca, dpi = 300, warning=FALSE, message=FALSE}
+eggs_hotspots_intensity_map_year(betas = betas_20067_oaxaca_1419_zinb1,
+                                 locality = "Oaxaca de Juárez",
+                                 cve_ent = "20",
+                                 palette = rcartocolor::carto_pal,
+                                 name = "SunsetDark")
+```
+
+### **<span style="color:#990000">Santa Cruz Xoxocotlán</span>**
+```{r vector_hotspots_santa_cruz_xoxocotlan, dpi = 300, warning=FALSE, message=FALSE}
+eggs_hotspots_intensity_map_year(betas = betas_20385_santa_cruz_xoxocotlan_1419_zinb1,
+                                 locality = "Santa Cruz Xoxocotlán",
+                                 cve_ent = "20",
+                                 palette = rcartocolor::carto_pal,
+                                 name = "SunsetDark")
+```
+
+### **<span style="color:#990000">Santa Lucia del Camino</span>**
+```{r vector_hotspots_santa_lucia_camino, dpi = 300, warning=FALSE, message=FALSE}
+eggs_hotspots_intensity_map_year(betas = betas_20390_santa_lucia_camino1419_zinb1,
+                                 locality = "Santa Lucia del Camino",
+                                 cve_ent = "20",
+                                 palette = rcartocolor::carto_pal,
+                                 name = "SunsetDark")
+```
+
+### **<span style="color:#990000">Matias Romero Avendaño</span>**
+```{r vector_hotspots_matias_romero, dpi = 300, warning=FALSE, message=FALSE}
+eggs_hotspots_intensity_map_year(betas = betas_20057_matias_romero_1419_zinb1,
+                                 locality = "Matias Romero Avendaño",
+                                 cve_ent = "20",
+                                 palette = rcartocolor::carto_pal,
+                                 name = "SunsetDark")
+```
+
+### **<span style="color:#990000">Loma Bonita</span>**
+```{r vector_hotspots_loma_bonita, dpi = 300, warning=FALSE, message=FALSE}
+eggs_hotspots_intensity_map_year(betas = betas_20044_loma_bonita_1419_zinb1,
+                                 locality = "Loma Bonita",
+                                 cve_ent = "20",
+                                 palette = rcartocolor::carto_pal,
+                                 name = "SunsetDark")
+```
+
+
+### **<span style="color:#990000">San Juan Bautista Tuxtepec</span>**
+```{r vector_hotspots_san_juan_bautista_tuxtepec, dpi = 300, warning=FALSE, message=FALSE}
+eggs_hotspots_intensity_map_year(betas = betas_20184_san_juan_bautista_tuxtepec_1419_zinb1,
+                                 locality = "San Juan Bautista Tuxtepec",
+                                 cve_ent = "20",
+                                 palette = rcartocolor::carto_pal,
+                                 name = "SunsetDark")
+```
+
+
+### **<span style="color:#990000">Puerto Escondido</span>**
+```{r vector_hotspots_puerto_escondido, dpi = 300, warning=FALSE, message=FALSE}
+eggs_hotspots_intensity_map_year(betas = betas_20318_puerto_escondido_1419_zinb1,
+                                 locality = "Puerto Escondido",
+                                 cve_ent = "20",
+                                 palette = rcartocolor::carto_pal,
+                                 name = "SunsetDark")
+```
+
+### **<span style="color:#990000">San Pedro Puchutla</span>**
+```{r vector_hotspots_san_pedro_pochutla, dpi = 300, warning=FALSE, message=FALSE}
+eggs_hotspots_intensity_map_year(betas = betas_20324_san_pedro_pochutla_1419_zinb1,
+                                 locality = "San Pedro Pochutla",
+                                 cve_ent = "20",
+                                 palette = rcartocolor::carto_pal,
+                                 name = "SunsetDark")
+```
+
+### **<span style="color:#990000">Santa María Huatulco</span>**
+```{r vector_hotspots_santa_maria_huatulco, dpi = 300, warning=FALSE, message=FALSE}
+eggs_hotspots_intensity_map_year(betas = betas_20413_santa_maria_huatulco_1419_zinb1,
+                                 locality = "Santa Maria Huatulco",
+                                 cve_ent = "20",
+                                 palette = rcartocolor::carto_pal,
+                                 name = "SunsetDark")
+```
+
+### **<span style="color:#990000">Crucesita</span>**
+```{r vector_hotspots_crucesita, dpi = 300, warning=FALSE, message=FALSE}
+eggs_hotspots_intensity_map_year(betas = betas_20413_crucesita1419_zinb1,
+                                 locality = "Crucesita",
+                                 cve_ent = "20",
+                                 palette = rcartocolor::carto_pal,
+                                 name = "SunsetDark")
+```
+
+### **<span style="color:#990000">Santiago de Pinotepa Nacional</span>**
+```{r vector_hotspots_santiago_pinotepa_nacional, dpi = 300, warning=FALSE, message=FALSE}
+eggs_hotspots_intensity_map_year(betas = betas_20482_santiago_pinotepa_nacional_1419_zinb1,
+                                 locality = "Santiago de Pinotepa Nacional",
+                                 cve_ent = "20",
+                                 palette = rcartocolor::carto_pal,
+                                 name = "SunsetDark")
+```
+
+### **<span style="color:#990000">Putla Villa de Guerrero</span>**
+```{r vector_hotspots_putla_villa, dpi = 300, warning=FALSE, message=FALSE}
+eggs_hotspots_intensity_map_year(betas = betas_20073_putla_villa_1419_zinb1,
+                                 locality = "Putla Villa de Guerrero",
+                                 cve_ent = "20",
+                                 palette = rcartocolor::carto_pal,
+                                 name = "SunsetDark")
+```
+
+### **<span style="color:#990000">Heroica Ciudad de Juchitan de Zaragoza</span>**
+```{r vector_hotspots_juchitan, dpi = 300, warning=FALSE, message=FALSE}
+deneggs::eggs_hotspots_intensity_map(spde_betas = betas_20043_juchitan_1419_zinb1,
+                                     years = 2022,
+                                     locality = "Heroica Ciudad de Juchitan de Zaragoza",
+                                     cve_ent = "20",
+                                     palette = rcartocolor::carto_pal,
+                                     name = "SunsetDark") 
+```
+
+### **<span style="color:#990000">San Juan Bautista Valle Nacional</span>**
+```{r vector_hotspots_san_juan_bautista_nacional, dpi = 300, warning=FALSE, message=FALSE}
+eggs_hotspots_intensity_map_year(betas = betas_20559_san_juan_bautista_nacional_1419_zinb1,
+                                 locality = "San Juan Bautista Valle Nacional",
+                                 cve_ent = "20",
+                                 palette = rcartocolor::carto_pal,
+                                 name = "SunsetDark")
+```
+
+**Mapas de Riesgo**
+=====================================  
+
+
+Column {.tabset}
+------------------------------------
+
+
+### **<span style="color:#990000">Oaxaca</span>**
+```{r risk_map_oaxaca, warning=FALSE, message=FALSE}
+ risk <- risk_agebs(spde_model = betas_20067_oaxaca_1419_zinb1,
+                   hotspots = cases_hotspots_agebs19,
+                   locality = "Oaxaca de Juárez",
+                   cve_ent = "20",
+                   intensity_perc = 25)
+risk_map(risk = risk, staticmap = FALSE)
+```
+
+### **<span style="color:#990000">Santiago Pinotepa Nacional</span>**
+```{r risk_map_pinotepa, warning=FALSE, message=FALSE}
+risk <- risk_agebs(spde_model = betas_20482_santiago_pinotepa_nacional_1419_zinb1,
+                   hotspots = cases_hotspots_agebs19,
+                   locality = "Santiago Pinotepa Nacional",
+                   cve_ent = "20",
+                   intensity_perc = 25)
+risk_map(risk = risk, staticmap = FALSE)
+```
+
+### **<span style="color:#990000"> Heroica Ciudad de Juchitán de Zaragoza</span>**
+
+```{r risk_map_juchitan, warning=FALSE, message=FALSE}
+risk <- risk_agebs(spde_model = betas_20043_juchitan_1419_zinb1,
+                   hotspots = cases_hotspots_agebs19,
+                   locality = "Heroica Ciudad de Juchitán de Zaragoza",
+                   cve_ent = "20",
+                   intensity_perc = 25)
+risk_map(risk = risk, staticmap = FALSE)
+```
+
+### **<span style="color:#990000">Salina Cruz</span>**
+```{r risk_map_salina_cruz, warning=FALSE, message=FALSE}
+risk <- risk_agebs(spde_model = betas_20385_santa_cruz_xoxocotlan_1419_zinb1,
+                   hotspots = cases_hotspots_agebs19,
+                   locality = "Salina Cruz",
+                   cve_ent = "20",
+                   intensity_perc = 25)
+risk_map(risk = risk, staticmap = FALSE)
+```
+
+### **<span style="color:#990000">Santo Domingo Tehuantepec</span>**
+```{r risk_map_santo_domingo, warning=FALSE, message=FALSE}
+risk <- risk_agebs(spde_model = betas_20043_juchitan_1419_zinb1,
+                   hotspots = cases_hotspots_agebs19,
+                   locality = "Santo Domingo Tehuantepec",
+                   cve_ent = "20",
+                   intensity_perc = 25)
+risk_map(risk = risk, staticmap = FALSE)
+```
+
+### **<span style="color:#990000">San Juan Bautista Tuxtepec</span>**
+```{r risk_map_tuxtepec, warning=FALSE, message=FALSE}
+risk <- risk_agebs(spde_model = betas_20184_san_juan_bautista_tuxtepec_1419_zinb1,
+                   hotspots = cases_hotspots_agebs19,
+                   locality = "San Juan Bautista Tuxtepec",
+                   cve_ent = "20",
+                   intensity_perc = 25)
+risk_map(risk = risk, staticmap = FALSE)
+```
+
+
+### **<span style="color:#990000">Puerto Escondido</span>**
+
+```{r risk_map_puerto_escondido, warning=FALSE, message=FALSE}
+risk <- risk_agebs(spde_model = betas_20318_puerto_escondido_1419_zinb1,
+                   hotspots = cases_hotspots_agebs19,
+                   locality = "Puerto Escondido",
+                   cve_ent = "20",
+                   intensity_perc = 25)
+risk_map(risk = risk, staticmap = FALSE)
+```
+
